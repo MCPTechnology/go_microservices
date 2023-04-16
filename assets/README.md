@@ -1,0 +1,3 @@
+# /assets
+
+Assets such as images, logos, etc...
