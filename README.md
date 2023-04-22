@@ -5,7 +5,7 @@
     - [What it does?](#what-it-does)
     - [What tech it uses this far?](#what-tech-it-uses-this-far)
     - [Tech Debt this far?](#tech-debt-this-far)
-    - [Architeture?](#architeture)
+    - [Architeture and Design Patterns](#architeture-and-design-patterns)
   - [Materials this code follows](#materials-this-code-follows)
   - [Materials to take a look at](#materials-to-take-a-look-at)
   - [How to use the Project](#how-to-use-the-project)
@@ -24,16 +24,19 @@ This is intended to be used as a guide and template for creating microservices w
 ### What tech it uses this far?
 
 - Golang
-  - No framework yet
+  - net/http
+  - [ServeMux](https://pkg.go.dev/net/http#ServeMux)
 
 ### Tech Debt this far?
 
+- Products PUT API needs to be able to take only the fields that should be updated on a record
 - MongoDB
 - [Kafka](https://www.youtube.com/watch?v=-yVxChp7HoQ&ab_channel=AnthonyGG)
 
-### Architeture?
+### Architeture and Design Patterns
 
 - Domain Driven Design
+- [Repository Pattern](https://threedots.tech/post/repository-pattern-in-go/)
 - [Factory Pattern](https://refactoring.guru/design-patterns/factory-method)
 - [Singleton](https://refactoring.guru/design-patterns/singleton)
 
