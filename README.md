@@ -29,6 +29,7 @@ This is intended to be used as a guide and template for creating microservices w
 
 ### Tech Debt this far?
 
+- Products PUT API needs to be able to take only the fields that should be updated on a record
 - MongoDB
 - [Kafka](https://www.youtube.com/watch?v=-yVxChp7HoQ&ab_channel=AnthonyGG)
 

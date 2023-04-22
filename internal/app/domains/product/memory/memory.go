@@ -22,9 +22,9 @@ func New() *MemoryProductRepository {
 
 // GetAll returns all products as a slice
 // This will not retuns an error but a database implementation might
-func (mpr *MemoryProductRepository) GetAll() (productAggregate.Products, error) {
+func (mpr *MemoryProductRepository) GetAll() ([]productAggregate.Product, error) {
 	// Collects all products from map
-	var products productAggregate.Products
+	var products []productAggregate.Product
 	for _, product := range mpr.products {
 		products = append(products, product)
 	}
@@ -57,7 +57,8 @@ func (mpr *MemoryProductRepository) Update(upprod productAggregate.Product) erro
 	mpr.Lock()
 	defer mpr.Unlock()
 
-	if _, ok := mpr.products[upprod.GetID()]; !ok {
+	_, err := mpr.GetByID(upprod.GetID())
+	if err != nil {
 		return productAggregate.ErrProductNotFound
 	}
 

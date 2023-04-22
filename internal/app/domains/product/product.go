@@ -4,10 +4,9 @@
 package product
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,14 +21,14 @@ type Product struct {
 	Name        string    `json:"name"`
 	Desctiption string    `json:"description"`
 	Price       float64   `json:"price"`
-	Quantity    int32     `json:"quantity"`
+	Quantity    int       `json:"quantity"`
 	UpdatedAt   string    `json:"-"`
 	CreatedAt   string    `json:"-"`
 	DeletedAt   string    `json:"-"`
 }
 
 // New product will return an error if name of description is empty
-func NewProduct(name string, description string, price float64) (Product, error) {
+func NewProduct(name string, description string, price float64, quantity int) (Product, error) {
 	if strings.TrimSpace(name) == "" || strings.TrimSpace(description) == "" {
 		return Product{}, ErrMissingValues
 	}
@@ -38,23 +37,11 @@ func NewProduct(name string, description string, price float64) (Product, error)
 		Name:        name,
 		Desctiption: description,
 		Price:       price,
-		Quantity:    0,
-		CreatedAt:   "",
-		UpdatedAt:   "",
+		Quantity:    quantity,
+		CreatedAt:   time.Now().UTC().String(),
+		UpdatedAt:   time.Now().UTC().String(),
 		DeletedAt:   "",
 	}, nil
-}
-
-func (p Product) ToJson(w io.Writer) error {
-	e := json.NewEncoder(w)
-	return e.Encode(p)
-}
-
-type Products []Product
-
-func (p *Products) ToJson(w io.Writer) error {
-	e := json.NewEncoder(w)
-	return e.Encode(p)
 }
 
 func (p Product) GetID() uuid.UUID {
@@ -65,6 +52,6 @@ func (p Product) GetPrice() float64 {
 	return p.Price
 }
 
-func (p Product) GetQuantity() int32 {
+func (p Product) GetQuantity() int {
 	return p.Quantity
 }

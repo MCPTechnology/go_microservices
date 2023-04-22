@@ -4,6 +4,7 @@ package inventory
 import (
 	productAggregate "github.com/MCPTechnology/go_microservices/internal/app/domains/product"
 	productMemoryRepo "github.com/MCPTechnology/go_microservices/internal/app/domains/product/memory"
+	dtos "github.com/MCPTechnology/go_microservices/internal/app/dtos"
 	"github.com/google/uuid"
 )
 
@@ -24,7 +25,7 @@ func NewInventoryService(cfgs ...InventoryConfiguration) (*InventoryService, err
 	return is, nil
 }
 
-func WithMemoryProductRepository(productsList productAggregate.Products) InventoryConfiguration {
+func WithMemoryProductRepository(productsList []productAggregate.Product) InventoryConfiguration {
 	products := productMemoryRepo.New()
 	return func(is *InventoryService) error {
 		for _, product := range productsList {
@@ -38,8 +39,8 @@ func WithMemoryProductRepository(productsList productAggregate.Products) Invento
 	}
 }
 
-func (is *InventoryService) AddProduct(name string, description string, price float64, quatity uint32) (uuid.UUID, error) {
-	product, err := productAggregate.NewProduct(name, description, price)
+func (is *InventoryService) AddProduct(p *dtos.ProductRequestDto) (uuid.UUID, error) {
+	product, err := productAggregate.NewProduct(p.Name, p.Desctiption, p.Price, p.Quantity)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -52,6 +53,24 @@ func (is *InventoryService) AddProduct(name string, description string, price fl
 	return product.GetID(), nil
 }
 
-func (is *InventoryService) GetAllProducts() (productAggregate.Products, error) {
-	return is.products.GetAll()
+func (is *InventoryService) GetAllProducts() (dtos.ProductsResponseDto, error) {
+	products, err := is.products.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return dtos.FromProducts(products), nil
+}
+
+func (is *InventoryService) UpdateProduct(uid uuid.UUID, p *dtos.ProductRequestDto) (uuid.UUID, error) {
+	product, err := productAggregate.NewProduct(p.Name, p.Desctiption, p.Price, p.Quantity)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	product.ID = uid
+	err = is.products.Update(product)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return product.GetID(), nil
 }

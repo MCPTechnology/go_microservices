@@ -25,7 +25,7 @@ func main() {
 
 	products := appHandlers.NewProducts(logger)
 
-	serveMux.Handle("/products", products)
+	serveMux.Handle("/", products)
 
 	server := &http.Server{
 		Addr:         addr,

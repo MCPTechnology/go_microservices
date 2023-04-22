@@ -13,6 +13,7 @@ func TestProduct_NewProduct(t *testing.T) {
 		description string
 		price       float64
 		expectedErr error
+		quantity    int
 	}
 
 	testCases := []testCase{
@@ -21,19 +22,21 @@ func TestProduct_NewProduct(t *testing.T) {
 			name:        "",
 			description: " ",
 			price:       0.0,
+			quantity:    1,
 			expectedErr: product.ErrMissingValues,
 		}, {
 			test:        "values are all Valid",
 			name:        "test_name",
 			description: "test product description",
 			price:       1.0,
+			quantity:    1,
 			expectedErr: nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.test, func(t *testing.T) {
-			_, err := product.NewProduct(tc.name, tc.description, tc.price)
+			_, err := product.NewProduct(tc.name, tc.description, tc.price, tc.quantity)
 			if err != tc.expectedErr {
 				t.Errorf("Expected error: %v, got: %v", tc.expectedErr, err)
 			}

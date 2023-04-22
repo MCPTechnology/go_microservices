@@ -15,7 +15,7 @@ var (
 )
 
 type Repository interface {
-	GetAll() (Products, error)
+	GetAll() ([]Product, error)
 	GetByID(id uuid.UUID) (Product, error)
 	Add(product Product) error
 	Update(product Product) error
