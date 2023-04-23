@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 
 	dtos "github.com/MCPTechnology/go_microservices/internal/app/dtos"
 	"github.com/MCPTechnology/go_microservices/internal/app/services/inventory"
 	"github.com/MCPTechnology/go_microservices/scripts/seeds"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type ProductHandler struct {
@@ -25,28 +25,6 @@ func NewProducts(l *log.Logger) *ProductHandler {
 		l.Printf("Error when configuring the Inventory Service: %v\n", err)
 	}
 	return &ProductHandler{l, is}
-}
-
-func (p *ProductHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		p.GetProducts(rw, r)
-		return
-	}
-
-	// Handle Product Creation
-	if r.Method == http.MethodPost {
-		p.AddProduct(rw, r)
-		return
-	}
-
-	// Handle Product Update
-	if r.Method == http.MethodPut {
-		p.UpdateProduct(rw, r)
-		return
-	}
-
-	// Catch all else
-	rw.WriteHeader(http.StatusMethodNotAllowed)
 }
 
 func (p *ProductHandler) GetProducts(rw http.ResponseWriter, r *http.Request) {
@@ -76,15 +54,9 @@ func (p *ProductHandler) AddProduct(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProductHandler) UpdateProduct(rw http.ResponseWriter, r *http.Request) {
-	// expect the id in the URI
-	reg := regexp.MustCompile(`([a-zA-Z0-9-]+)`)
-	g := reg.FindAllStringSubmatch(r.URL.Path, -1)
-	if len(g) != 1 {
-		http.Error(rw, "Invalid URI", http.StatusBadRequest)
-		return
-	}
+	vars := mux.Vars(r)
+	idString := vars["id"]
 
-	idString := g[0][1]
 	fmt.Printf("Uuid: %v\n", idString)
 	prod := &dtos.ProductRequestDto{}
 	err := prod.FromJon(r.Body)
