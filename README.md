@@ -16,7 +16,6 @@
 
 This project is intended for experimenting with Golang for the creation of microservices
 
-
 ### What it does?
 
 This is intended to be used as a guide and template for creating microservices with Golang and other stacks such as Rest APIs, Kafka, Docker, MongoDB, PostgreSQL, Kubernetes
@@ -32,6 +31,7 @@ This is intended to be used as a guide and template for creating microservices w
 - Products PUT API needs to be able to take only the fields that should be updated on a record
 - MongoDB
 - [Kafka](https://www.youtube.com/watch?v=-yVxChp7HoQ&ab_channel=AnthonyGG)
+- [Rate Limiting Server](https://github.com/bitfield/tpg-tests/blob/main/req/1/req_test.go#L22)
 
 ### Architeture and Design Patterns
 
@@ -51,4 +51,3 @@ This is intended to be used as a guide and template for creating microservices w
 2. [Go Wiki](https://github.com/golang/go/wiki)
 
 ## How to use the Project
-
