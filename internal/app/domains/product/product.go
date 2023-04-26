@@ -5,9 +5,12 @@ package product
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/MCPTechnology/go_microservices/pkg/errs"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -18,10 +21,10 @@ var ErrMissingValues = errors.New("Missing values")
 type Product struct {
 	// ID is the entity identifier
 	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Desctiption string    `json:"description"`
-	Price       float64   `json:"price"`
-	Quantity    int       `json:"quantity"`
+	Name        string    `json:"name" validate:"required,min=3,max=20"`
+	Desctiption string    `json:"description" validate:"required,min=5,max=150"`
+	Price       float64   `json:"price" validate:"required,gte=0"`
+	Quantity    int       `json:"quantity" validate:"required,gte=0"`
 	UpdatedAt   string    `json:"-"`
 	CreatedAt   string    `json:"-"`
 	DeletedAt   string    `json:"-"`
@@ -29,10 +32,7 @@ type Product struct {
 
 // New product will return an error if name of description is empty
 func NewProduct(name string, description string, price float64, quantity int) (Product, error) {
-	if strings.TrimSpace(name) == "" || strings.TrimSpace(description) == "" {
-		return Product{}, ErrMissingValues
-	}
-	return Product{
+	p := Product{
 		ID:          uuid.New(),
 		Name:        name,
 		Desctiption: description,
@@ -41,7 +41,30 @@ func NewProduct(name string, description string, price float64, quantity int) (P
 		CreatedAt:   time.Now().UTC().String(),
 		UpdatedAt:   time.Now().UTC().String(),
 		DeletedAt:   "",
-	}, nil
+	}
+	err := p.Validate()
+	if err != nil {
+		return Product{}, err
+	}
+	return p, nil
+}
+
+func (p Product) Validate() error {
+	v := validator.New()
+	v.RegisterTagNameFunc(
+		func(f reflect.StructField) string {
+			name := strings.SplitN(f.Tag.Get("json"), ",", 2)[0]
+			if name == "-" {
+				return ""
+			}
+			return name
+		})
+	err := v.Struct(p)
+	if err != nil {
+		validationErr := err.(validator.ValidationErrors)
+		return errs.NewValidationError(validationErr)
+	}
+	return nil
 }
 
 func (p Product) GetID() uuid.UUID {
