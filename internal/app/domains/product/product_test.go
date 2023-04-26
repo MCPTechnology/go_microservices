@@ -6,6 +6,7 @@ import (
 
 	"github.com/MCPTechnology/go_microservices/internal/app/domains/product"
 	"github.com/MCPTechnology/go_microservices/pkg/errs"
+	"github.com/MCPTechnology/go_microservices/pkg/validations"
 )
 
 func TestProduct_NewProduct(t *testing.T) {
@@ -52,7 +53,7 @@ func TestProduct_ValidationError(t *testing.T) {
 
 	t.Run(tc.name, func(t *testing.T) {
 		_, err := product.NewProduct(tc.productName, tc.description, tc.price, tc.quantity)
-		if !errors.Is(err, errs.ErrValidationError) {
+		if !errors.Is(err, validations.ErrValidationError) {
 			t.Errorf("Expected error %v and got: %v", errs.ErrValidationError, err)
 		}
 	})

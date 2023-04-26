@@ -5,12 +5,9 @@ package product
 
 import (
 	"errors"
-	"reflect"
-	"strings"
 	"time"
 
-	"github.com/MCPTechnology/go_microservices/pkg/errs"
-	"github.com/go-playground/validator/v10"
+	"github.com/MCPTechnology/go_microservices/pkg/validations"
 	"github.com/google/uuid"
 )
 
@@ -42,29 +39,11 @@ func NewProduct(name string, description string, price float64, quantity int) (P
 		UpdatedAt:   time.Now().UTC().String(),
 		DeletedAt:   "",
 	}
-	err := p.Validate()
+	err := validations.Validate(p)
 	if err != nil {
 		return Product{}, err
 	}
 	return p, nil
-}
-
-func (p Product) Validate() error {
-	v := validator.New()
-	v.RegisterTagNameFunc(
-		func(f reflect.StructField) string {
-			name := strings.SplitN(f.Tag.Get("json"), ",", 2)[0]
-			if name == "-" {
-				return ""
-			}
-			return name
-		})
-	err := v.Struct(p)
-	if err != nil {
-		validationErr := err.(validator.ValidationErrors)
-		return errs.NewValidationError(validationErr)
-	}
-	return nil
 }
 
 func (p Product) GetID() uuid.UUID {
