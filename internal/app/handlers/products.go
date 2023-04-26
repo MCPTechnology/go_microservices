@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,7 +34,6 @@ func (p *ProductHandler) GetProducts(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Unable to query all Products", http.StatusInternalServerError)
 	}
 
-	p.logger.Printf("Products: %v", productsList)
 	err = productsList.ToJson(rw)
 	if err != nil {
 		http.Error(rw, "Unable to marshal json", http.StatusInternalServerError)
@@ -41,14 +41,12 @@ func (p *ProductHandler) GetProducts(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProductHandler) AddProduct(rw http.ResponseWriter, r *http.Request) {
-	prod := &dtos.ProductRequestDto{}
-	err := prod.FromJon(r.Body)
+	prod := r.Context().Value(KeyProduct{}).(*dtos.ProductRequestDto)
+	productId, err := p.inventoryService.AddProduct(prod)
 	if err != nil {
-		http.Error(rw, "Unable to unmarshal json", http.StatusBadRequest)
+		http.Error(rw, "Unable to add product", http.StatusInternalServerError)
 		return
 	}
-	productId, err := p.inventoryService.AddProduct(prod)
-
 	responseDto := dtos.ProductIdResponseDto{ID: productId}
 	responseDto.ToJson(rw)
 }
@@ -57,18 +55,12 @@ func (p *ProductHandler) UpdateProduct(rw http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	idString := vars["id"]
 
-	fmt.Printf("Uuid: %v\n", idString)
-	prod := &dtos.ProductRequestDto{}
-	err := prod.FromJon(r.Body)
-	if err != nil {
-		http.Error(rw, "Unable to unmarshal json", http.StatusBadRequest)
-		return
-	}
 	uid, err := uuid.Parse(idString)
 	if err != nil {
 		http.Error(rw, "Invalid Product ID", http.StatusBadRequest)
 		return
 	}
+	prod := r.Context().Value(KeyProduct{}).(*dtos.ProductRequestDto)
 	productId, err := p.inventoryService.UpdateProduct(uid, prod)
 	if err != nil {
 		errorStr := fmt.Sprintf("Unable to perform update due to error: %v", err)
@@ -77,4 +69,24 @@ func (p *ProductHandler) UpdateProduct(rw http.ResponseWriter, r *http.Request) 
 	}
 	responseDto := dtos.ProductIdResponseDto{ID: productId}
 	responseDto.ToJson(rw)
+}
+
+type KeyProduct struct{}
+
+func (p *ProductHandler) MiddlewareProductValidation(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		prod := &dtos.ProductRequestDto{}
+		err := prod.FromJon(r.Body)
+		if err != nil {
+			http.Error(rw, "Unable to unmarshal json", http.StatusBadRequest)
+			return
+		}
+
+		// add the product to the context
+		ctx := context.WithValue(r.Context(), KeyProduct{}, prod)
+		r = r.WithContext(ctx)
+
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		next.ServeHTTP(rw, r)
+	})
 }

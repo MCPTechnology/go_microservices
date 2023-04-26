@@ -25,9 +25,12 @@ func main() {
 	getRouter := serveMux.Methods(http.MethodGet).Subrouter()
 	postRouter := serveMux.Methods(http.MethodPost).Subrouter()
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
-	
+
 	logger := log.New(os.Stdout, "product-api", log.LstdFlags)
 	products := appHandlers.NewProducts(logger)
+	postRouter.Use(products.MiddlewareProductValidation)
+	putRouter.Use(products.MiddlewareProductValidation)
+
 	getRouter.HandleFunc("/inventory/products", products.GetProducts)
 	postRouter.HandleFunc("/inventory/product", products.AddProduct)
 	putRouter.HandleFunc("/inventory/product/{id:[a-z0-9-]+}", products.UpdateProduct)
