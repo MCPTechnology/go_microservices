@@ -1,0 +1,32 @@
+package errs
+
+import (
+	"errors"
+)
+
+type SentinelWrappedError struct {
+	error
+	Sentinel *sentinelAPIError
+}
+
+func appendDetailErrors(e *sentinelAPIError, errs []error) {
+	e.Details = make([]string, len(errs))
+	for i, err := range errs {
+		e.Details[i] = err.Error()
+	}
+}
+
+func WrapError(sentinel *sentinelAPIError, err ...error) SentinelWrappedError {
+	switch e := err[0].(type) {
+	case SentinelWrappedError:
+		return e
+	default:
+		sentinelError := SentinelWrappedError{error: errors.Join(err...), Sentinel: sentinel}
+		appendDetailErrors(sentinelError.Sentinel, err)
+		return sentinelError
+	}
+}
+
+func (swe SentinelWrappedError) Is(err error) bool {
+	return swe.Sentinel == err
+}
