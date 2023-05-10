@@ -1,60 +1,62 @@
-package product_test
+package product
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/MCPTechnology/go_microservices/internal/app/domains/product"
-	"github.com/MCPTechnology/go_microservices/pkg/errs"
-	"github.com/MCPTechnology/go_microservices/pkg/validations"
+	"github.com/MCPTechnology/go_microservices/internal/errs"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestProduct_NewProduct(t *testing.T) {
-	type testCase struct {
+func TestNewProduct(t *testing.T) {
+	type args struct {
 		name        string
-		productName string
 		description string
 		price       float64
 		quantity    int
 	}
-
-	tc := testCase{
-		name:        "Product fields are valid",
-		productName: "Product 1",
-		description: "test product description",
-		price:       1.0,
-		quantity:    1,
-	}
-
-	t.Run(tc.name, func(t *testing.T) {
-		_, err := product.NewProduct(tc.productName, tc.description, tc.price, tc.quantity)
-		if err != nil {
-			t.Fatal("New Product instance shouldn't return any errors")
-		}
-	})
-}
-
-func TestProduct_ValidationError(t *testing.T) {
-	type testCase struct {
+	tests := []struct {
 		name        string
-		productName string
-		description string
-		price       float64
-		quantity    int
+		args        args
+		want        Product
+		wantErr     bool
+		expectedErr error
+	}{
+		{
+			name: "Successfully create a new Protuct aggregate",
+			args: args{
+				name:        "Product1",
+				description: "Description 1",
+				price:       10.01,
+				quantity:    1,
+			},
+			want: Product{
+				Name:        "Product1",
+				Description: "Description 1",
+				Price:       10.01,
+				Quantity:    1,
+			},
+			wantErr:     false,
+			expectedErr: nil,
+		},
+		{
+			name: "Validation error when creating a product aggregate",
+			args: args{
+				name:        "Product1",
+				description: "",
+				price:       10.01,
+				quantity:    -1,
+			},
+			want:        Product{},
+			wantErr:     true,
+			expectedErr: errs.ErrValidation,
+		},
 	}
-
-	tc := testCase{
-		name:        "Product fields are invalid",
-		productName: "",
-		description: " ",
-		price:       0.0,
-		quantity:    0,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewProduct(tt.args.name, tt.args.description, tt.args.price, tt.args.quantity)
+			assert.Equalf(t, err != nil, tt.wantErr, "NewProduct() error = %v, wantErr %v", err, tt.wantErr)
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.Truef(t, got.DeepEqual(tt.want), "NewProduct() = %v, want %v", got, tt.want)
+		})
 	}
-
-	t.Run(tc.name, func(t *testing.T) {
-		_, err := product.NewProduct(tc.productName, tc.description, tc.price, tc.quantity)
-		if !errors.Is(err, validations.ErrValidationError) {
-			t.Errorf("Expected error %v and got: %v", errs.ErrValidationError, err)
-		}
-	})
 }

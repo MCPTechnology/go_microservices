@@ -2,9 +2,10 @@
 package inventory
 
 import (
+	"errors"
+
 	productAggregate "github.com/MCPTechnology/go_microservices/internal/app/domains/product"
 	productMemoryRepo "github.com/MCPTechnology/go_microservices/internal/app/domains/product/memory"
-	dtos "github.com/MCPTechnology/go_microservices/internal/app/dtos"
 	"github.com/google/uuid"
 )
 
@@ -39,8 +40,8 @@ func WithMemoryProductRepository(productsList []productAggregate.Product) Invent
 	}
 }
 
-func (is *InventoryService) AddProduct(p *dtos.ProductRequestDto) (uuid.UUID, error) {
-	product, err := productAggregate.NewProduct(p.Name, p.Desctiption, p.Price, p.Quantity)
+func (is *InventoryService) AddProduct(name string, description string, price float64, quantity int) (uuid.UUID, error) {
+	product, err := productAggregate.NewProduct(name, description, price, quantity)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -53,17 +54,16 @@ func (is *InventoryService) AddProduct(p *dtos.ProductRequestDto) (uuid.UUID, er
 	return product.GetID(), nil
 }
 
-func (is *InventoryService) GetAllProducts() (dtos.ProductsResponseDto, error) {
+func (is *InventoryService) GetAllProducts() ([]productAggregate.Product, error) {
 	products, err := is.products.GetAll()
-	if err != nil {
+	if err != nil && !errors.Is(err, productAggregate.ErrNoProductsFound) {
 		return nil, err
 	}
-
-	return dtos.FromProducts(products), nil
+	return products, nil
 }
 
-func (is *InventoryService) UpdateProduct(uid uuid.UUID, p *dtos.ProductRequestDto) (uuid.UUID, error) {
-	product, err := productAggregate.NewProduct(p.Name, p.Desctiption, p.Price, p.Quantity)
+func (is *InventoryService) UpdateProduct(uid uuid.UUID, name string, description string, price float64, quantity int) (uuid.UUID, error) {
+	product, err := productAggregate.NewProduct(name, description, price, quantity)
 	if err != nil {
 		return uuid.Nil, err
 	}

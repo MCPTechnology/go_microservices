@@ -12,8 +12,7 @@ import (
 var ErrMarshalError error = errors.New("unable to parse data structure")
 
 func ToJson(w io.Writer, target interface{}) error {
-	encoder := json.NewEncoder(w)
-	err := encoder.Encode(target)
+	err := json.NewEncoder(w).Encode(target)
 	if err != nil {
 		return ErrMarshalError
 	}
@@ -21,8 +20,7 @@ func ToJson(w io.Writer, target interface{}) error {
 }
 
 func FromJson(r io.Reader, target interface{}) error {
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(target)
+	err := json.NewDecoder(r).Decode(target)
 	if err != nil {
 		return errs.WrapError(errs.ErrBadRequest, err)
 	}

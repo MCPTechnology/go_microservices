@@ -28,5 +28,14 @@ func WrapError(sentinel *sentinelAPIError, err ...error) SentinelWrappedError {
 }
 
 func (swe SentinelWrappedError) Is(err error) bool {
-	return swe.Sentinel == err
+	if errors.Is(swe.error, err) {
+		return true
+	}
+	if errors.Is(swe.Sentinel, err) {
+		return true
+	}
+	if swe.Sentinel == err {
+		return true
+	}
+	return false
 }

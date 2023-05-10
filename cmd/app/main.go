@@ -11,21 +11,20 @@ import (
 	"time"
 
 	inventoryHandler "github.com/MCPTechnology/go_microservices/internal/app/handlers/inventory"
-	"github.com/MCPTechnology/go_microservices/scripts/seeds"
 	"github.com/gorilla/mux"
 )
 
 const (
-	ip                     string        = ""
+	host                   string        = ""
 	port                   int32         = 9090
 	appName                string        = "products_api_"
-	idleTimeout            time.Duration = 120 * time.Second
-	readTimeout            time.Duration = 1 * time.Second
-	writeTimeout           time.Duration = 1 * time.Second
+	idleTimeout            time.Duration = 500 * time.Second
+	readTimeout            time.Duration = 500 * time.Second
+	writeTimeout           time.Duration = 500 * time.Second
 	gracefulShutdownPeriod time.Duration = 30 * time.Second
 )
 
-var addr string = fmt.Sprintf("%v:%v", ip, port)
+var addr string = fmt.Sprintf("%v:%v", host, port)
 
 func main() {
 	serveMux := mux.NewRouter()
@@ -34,9 +33,9 @@ func main() {
 	putRouter := serveMux.Methods(http.MethodPut).Subrouter()
 
 	logger := log.New(os.Stdout, appName, log.LstdFlags)
-	products := inventoryHandler.NewInventoryHandler(logger, seeds.SeedProducts()...)
-	postRouter.Use(products.MiddlewareProductValidation)
-	putRouter.Use(products.MiddlewareProductValidation)
+	products := inventoryHandler.NewInventoryHandler(logger)
+	// postRouter.Use(products.MiddlewareProductValidation)
+	// putRouter.Use(products.MiddlewareProductValidation)
 
 	getRouter.HandleFunc("/inventory/products", products.GetProducts)
 	postRouter.HandleFunc("/inventory/product", products.AddProduct)

@@ -1,81 +1,236 @@
 package memory
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/MCPTechnology/go_microservices/internal/app/domains/product"
+	productAggregate "github.com/MCPTechnology/go_microservices/internal/app/domains/product"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMemoryProductRepository_Add(t *testing.T) {
-	repo := New()
-	product, err := product.NewProduct("Beer", "Good for your social life", 1.99, 1)
-	if err != nil {
-		t.Error(err)
-	}
+func getValidProductInstance(t *testing.T) productAggregate.Product {
+	prod, err := productAggregate.NewProduct(
+		"Product",
+		"Description",
+		1.01,
+		1,
+	)
+	assert.Nil(t, err)
+	return prod
+}
 
-	repo.Add(product)
-	if len(repo.products) != 1 {
-		t.Errorf("Expected 1 product, got %d", len(repo.products))
+func getInvalidProductInstance(t *testing.T) productAggregate.Product {
+	prod, err := productAggregate.NewProduct(
+		"P",
+		"Des",
+		1,
+		-1,
+	)
+	assert.Nil(t, err)
+	return prod
+}
+
+func addProductsToRepository(t *testing.T, mpr *MemoryProductRepository, n int) {
+	for i := 0; i < n; i++ {
+		product, err := productAggregate.NewProduct(fmt.Sprintf("Product%v", i), "Description", 1.99, 1)
+		assert.Nil(t, err)
+		err = mpr.Add(product)
+		assert.Nil(t, err)
 	}
 }
 
-func TestMemoryProductRepository_Get(t *testing.T) {
-	repo := New()
-	existingProduct, err := product.NewProduct("Beer", "Good for your social life", 1.99, 1)
-	if err != nil {
-		t.Error(err)
+func TestMemoryProductRepository_GetAll(t *testing.T) {
+	type args struct {
+		expectedProductCount int
 	}
 
-	repo.Add(existingProduct)
-	if len(repo.products) != 1 {
-		t.Errorf("Expected 1 product, got %d", len(repo.products))
-	}
-
-	type testCase struct {
+	tests := []struct {
 		name        string
+		args        args
 		expectedErr error
-		id          uuid.UUID
-	}
-
-	testCases := []testCase{
+	}{
 		{
-			name:        "Successfully retrieves a Product",
+			name:        "retrieves all products",
+			args:        args{expectedProductCount: 10},
 			expectedErr: nil,
-			id:          existingProduct.GetID(),
 		}, {
-			name:        "Non existing product",
-			expectedErr: product.ErrProductNotFound,
-			id:          uuid.New(),
+			name:        "no products found",
+			args:        args{expectedProductCount: 0},
+			expectedErr: productAggregate.ErrNoProductsFound,
 		},
 	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := repo.GetByID(tc.id)
-			if err != tc.expectedErr {
-				t.Errorf("Expected error %v, got %v", tc.expectedErr, err)
-			}
+	for _, tt := range tests {
+		mpr := New()
+		addProductsToRepository(t, mpr, tt.args.expectedProductCount)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mpr.GetAll()
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.Equalf(t, tt.args.expectedProductCount, len(got), "Expected to get %v products and got %v", tt.args.expectedProductCount, len(got))
+		})
+	}
+}
+
+func TestMemoryProductRepository_GetByID(t *testing.T) {
+	mpr := New()
+	existingProduct := getValidProductInstance(t)
+	mpr.Add(existingProduct)
+
+	tests := []struct {
+		name        string
+		id          uuid.UUID
+		want        productAggregate.Product
+		expectedErr error
+	}{
+		{
+			name:        "retrieves a product",
+			id:          existingProduct.GetID(),
+			want:        existingProduct,
+			expectedErr: nil,
+		}, {
+			name:        "product does not exist",
+			id:          uuid.New(),
+			want:        productAggregate.Product{},
+			expectedErr: productAggregate.ErrProductNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mpr.GetByID(tt.id)
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.EqualValues(t, tt.want, got)
+		})
+	}
+}
+
+func TestMemoryProductRepository_GetByName(t *testing.T) {
+	mpr := New()
+	existingProd := getValidProductInstance(t)
+	err := mpr.Add(existingProd)
+	assert.Nil(t, err)
+
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		want        productAggregate.Product
+		expectedErr error
+	}{
+		{
+			name:        "retrieve product by name",
+			args:        args{name: existingProd.Name},
+			want:        existingProd,
+			expectedErr: nil,
+		}, {
+			name:        "retrieve product by name",
+			args:        args{name: "any"},
+			want:        productAggregate.Product{},
+			expectedErr: productAggregate.ErrProductNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mpr.GetByName(tt.args.name)
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.EqualValues(t, tt.want, got)
+		})
+	}
+}
+
+func TestMemoryProductRepository_Add(t *testing.T) {
+	mpr := New()
+	type args struct {
+		newProduct productAggregate.Product
+	}
+	tests := []struct {
+		name        string
+		args        args
+		expectedErr error
+	}{
+		{
+			name: "add a product to the repository",
+			args: args{
+				newProduct: getValidProductInstance(t),
+			},
+			expectedErr: nil,
+		}, {
+			name: "product already exists",
+			args: args{
+				newProduct: getValidProductInstance(t),
+			},
+			expectedErr: productAggregate.ErrProductAlreadyExists,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := mpr.Add(tt.args.newProduct)
+			assert.ErrorIs(t, err, tt.expectedErr)
+		})
+	}
+}
+
+func TestMemoryProductRepository_Update(t *testing.T) {
+	mpr := New()
+	existingProd := getValidProductInstance(t)
+	err := mpr.Add(existingProd)
+	assert.Nil(t, err)
+
+	type args struct {
+		upprod productAggregate.Product
+	}
+	tests := []struct {
+		name        string
+		args        args
+		expectedErr error
+	}{
+		{
+			name:        "update a product",
+			args:        args{upprod: existingProd},
+			expectedErr: nil,
+		}, {
+			name:        "product does not exist",
+			args:        args{upprod: getValidProductInstance(t)},
+			expectedErr: productAggregate.ErrProductNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := mpr.Update(tt.args.upprod)
+			assert.ErrorIs(t, err, tt.expectedErr)
 		})
 	}
 }
 
 func TestMemoryProductRepository_Delete(t *testing.T) {
-	repo := New()
-	existingProd, err := product.NewProduct("Beer", "Good for your health", 1.99, 1)
-	if err != nil {
-		t.Error(err)
-	}
+	mpr := New()
+	existingProd := getValidProductInstance(t)
+	err := mpr.Add(existingProd)
+	assert.Nil(t, err)
 
-	repo.Add(existingProd)
-	if len(repo.products) != 1 {
-		t.Errorf("Expected 1 product, got %d", len(repo.products))
+	type args struct {
+		id uuid.UUID
 	}
-
-	err = repo.Delete(existingProd.GetID())
-	if err != nil {
-		t.Error(err)
+	tests := []struct {
+		name        string
+		args        args
+		expectedErr error
+	}{
+		{
+			name:        "delete a product",
+			args:        args{id: existingProd.ID},
+			expectedErr: nil,
+		}, {
+			name:        "product does not exist",
+			args:        args{id: getValidProductInstance(t).ID},
+			expectedErr: productAggregate.ErrProductNotFound,
+		},
 	}
-	if len(repo.products) != 0 {
-		t.Errorf("Expected 0 products, got %d", len(repo.products))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := mpr.Delete(tt.args.id)
+			assert.ErrorIs(t, err, tt.expectedErr)
+		})
 	}
 }
